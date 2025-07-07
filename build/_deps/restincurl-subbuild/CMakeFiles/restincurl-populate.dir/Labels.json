@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-subbuild/CMakeFiles/restincurl-populate"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-subbuild/CMakeFiles/restincurl-populate.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-subbuild/CMakeFiles/restincurl-populate-complete.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-subbuild/restincurl-populate-prefix/src/restincurl-populate-stamp/restincurl-populate-build.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-subbuild/restincurl-populate-prefix/src/restincurl-populate-stamp/restincurl-populate-configure.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-subbuild/restincurl-populate-prefix/src/restincurl-populate-stamp/restincurl-populate-download.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-subbuild/restincurl-populate-prefix/src/restincurl-populate-stamp/restincurl-populate-install.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-subbuild/restincurl-populate-prefix/src/restincurl-populate-stamp/restincurl-populate-mkdir.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-subbuild/restincurl-populate-prefix/src/restincurl-populate-stamp/restincurl-populate-patch.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-subbuild/restincurl-populate-prefix/src/restincurl-populate-stamp/restincurl-populate-test.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-subbuild/restincurl-populate-prefix/src/restincurl-populate-stamp/restincurl-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"restincurl-populate"
+		],
+		"name" : "restincurl-populate"
+	}
+}

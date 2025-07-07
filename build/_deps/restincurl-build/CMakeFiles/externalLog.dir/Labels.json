@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-build/CMakeFiles/externalLog"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-build/CMakeFiles/externalLog.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/_deps/restincurl-build/CMakeFiles/externalLog-complete.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/external-projects/src/externalLog-stamp/externalLog-build.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/external-projects/src/externalLog-stamp/externalLog-configure.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/external-projects/src/externalLog-stamp/externalLog-download.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/external-projects/src/externalLog-stamp/externalLog-install.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/external-projects/src/externalLog-stamp/externalLog-mkdir.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/external-projects/src/externalLog-stamp/externalLog-patch.rule"
+		},
+		{
+			"file" : "/home/runner/work/cpp-push/cpp-push/build/external-projects/src/externalLog-stamp/externalLog-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"externalLog"
+		],
+		"name" : "externalLog"
+	}
+}

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libCppPush.a CMakeFiles/CppPush.dir/GooglePusher.cpp.o CMakeFiles/CppPush.dir/Pusher.cpp.o
+/usr/bin/ranlib libCppPush.a

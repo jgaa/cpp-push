@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/jwks-verify.dir/link.d "CMakeFiles/jwks-verify.dir/jwks-verify.cpp.o" -o jwks-verify  /usr/lib/x86_64-linux-gnu/libssl.so /usr/lib/x86_64-linux-gnu/libcrypto.so
