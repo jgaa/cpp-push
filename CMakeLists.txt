@@ -3,6 +3,7 @@ project(cpp-push VERSION 0.1.0 LANGUAGES CXX)
 
 set(CPP_PUSH_VERSION "${PROJECT_VERSION}")
 add_definitions(-DCPP_PUSH_VERSION="${CPP_PUSH_VERSION}")
+add_definitions(-DRESTINCURL_ENABLE_ASIO=1 -DRESTINCURL_ENABLE_ASYNC=1)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -34,6 +35,7 @@ find_package(Boost 1.80 REQUIRED COMPONENTS
   filesystem
   system
   json
+  url
   )
 
 include(FetchContent)
@@ -84,34 +86,3 @@ ensure_dep(
 add_subdirectory(src/lib)
 add_subdirectory(src/cli)
 
-# # ——— Your library ———
-# add_library(cpp-push
-#   src/pusher.cpp
-#   include/pusher.hpp
-# )
-# target_link_libraries(cpp-push
-#   PUBLIC
-#     RESTinCurl::RESTinCurl
-#     logfault::logfault
-#     jwt-cpp::jwt-cpp
-# )
-#
-# target_include_directories(cpp-push
-#   PUBLIC
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#     $<INSTALL_INTERFACE:include>
-# )
-#
-# # ——— Tests ———
-# if(BUILD_TESTING)
-#   enable_testing()
-#   add_executable(test-push tests/test_pusher.cpp)
-#   target_link_libraries(test-push PRIVATE cpp-push)
-#   add_test(NAME pusher-tests COMMAND test-push)
-# endif()
-#
-# # ——— CLI tool ———
-# add_executable(push-cli src/main.cpp)
-# target_link_libraries(push-cli PRIVATE cpp-push)
-#
-# # …and optionally install/export targets as usual…

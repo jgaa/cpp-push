@@ -23,9 +23,11 @@ target_include_directories(
 target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC
-    RESTinCurl
+    RESTinCurl::RESTinCurl
     logfault
-    #RESTinCurl::RESTinCurl
-    #logfault::logfault
     jwt-cpp::jwt-cpp
+    Boost::filesystem
+    Boost::system
+    Boost::json
+    Boost::url
 )

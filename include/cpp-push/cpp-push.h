@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cpp-push/CppPush.h"
+#include "cpp-push/Pusher.h"
 
 namespace jgaa::cpp_push {
 
