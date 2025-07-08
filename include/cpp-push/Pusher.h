@@ -18,7 +18,7 @@ struct Config {
            you created the firebase project for push notification to your Android app.
         */
         std::filesystem::path config_file{};
-        int jwt_ttl_minutes{45}; // Time to live for the JWT token in minutes
+        int jwt_ttl_minutes{60}; // Time to live for the JWT token in minutes
         int jwt_refresh_minutes{3}; // Refresh the JWT token n minutes before the existing token expires
     };
 
@@ -44,7 +44,8 @@ struct PushMessage {
     };
 
     using tokens_t = std::variant<std::string_view, std::span<std::string_view>>;
-    using data_t = std::vector<std::pair<std::string_view, std::string_view>>;
+    using data_t = std::span<std::pair<std::string_view, std::string_view>>;
+    using data_values_t = std::vector<std::pair<std::string_view, std::string_view>>;
 
     tokens_t to;    // 1-many devices across platforms
     data_t data;    // always delivered
@@ -124,6 +125,10 @@ public:
 
         Result(unsigned int num_successful)
             : success_(true), num_successful_{num_successful} {}
+
+        operator bool () const noexcept {
+            return ok();
+        }
 
         bool ok() const noexcept {
             return success_;

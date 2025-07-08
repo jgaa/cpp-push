@@ -132,16 +132,21 @@ int main(int argc, char* argv[]) {
         pm.to = span{tow}; // Use span for multiple tokens};
     }
 
-    pm.data.reserve(data.size());
+    // pm.data is just a span of string_views, so we must give it data buffers that will remain valid
+    jgaa::cpp_push::PushMessage::data_values_t data_pairs;
+
+    data_pairs.reserve(data.size());
     for(string_view d : data) {
-        // Extract the k/v values a string_views and add them to pm.data
+        // Extract the k/v values a string_views and add them to our data container
         auto pos = d.find('=');
         if (pos != std::string::npos) {
-            pm.data.emplace_back(d.substr(0, pos), d.substr(pos + 1));
+            data_pairs.emplace_back(d.substr(0, pos), d.substr(pos + 1));
         } else {
             throw std::runtime_error("Invalid data format, expected key=value pairs");
         }
     }
+
+    pm.data = data_pairs;
 
     if (auto level = toLogLevel(log_level_console)) {
         logfault::LogManager::Instance().AddHandler(

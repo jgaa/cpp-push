@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(USE_STATIC_BOOST "Link Boost statically" ON)
+option(WITH_PUSH_CLI "Compile the push client" OFF)
 option(WITH_LOGFAULT "Use logfault library for logging" ON)
 set(CPP_PUSH_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -44,7 +45,7 @@ include(FetchContent)
 function(ensure_dep NAME CONFIG_NAME GIT_REPO GIT_TAG)
   # 1) First try to find an existing config
   find_package(${CONFIG_NAME} QUIET)
-  if(NOT TARGET ${CONFIG_NAME}::${CONFIG_NAME})
+  if(NOT TARGET ${CONFIG_NAME}::${CONFIG_NAME} AND NOT TARGET ${CONFIG_NAME})
     message(STATUS "Fetching ${NAME}…")
     FetchContent_Declare(
       ${NAME}
@@ -84,5 +85,11 @@ ensure_dep(
 )
 
 add_subdirectory(src/lib)
-add_subdirectory(src/cli)
+
+if(WITH_PUSH_CLI)
+  message(STATUS "Compiling the push client")
+  add_subdirectory(src/cli)
+else()
+  message(STATUS "Not compiling the push client")
+endif()
 
