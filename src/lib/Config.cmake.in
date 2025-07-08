@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Find dependencies
+find_dependency(Threads)
+find_dependency(Boost 1.80 REQUIRED COMPONENTS filesystem system json url)
+
+# Note: The following dependencies (RESTinCurl, logfault, jwt-cpp) are typically
+# fetched during build and would need to be available in the system where this
+# package is installed. Users should ensure these dependencies are available.
+
+# Include the targets file
+include("${CMAKE_CURRENT_LIST_DIR}/CppPushTargets.cmake")
+
+check_required_components(CppPush)
