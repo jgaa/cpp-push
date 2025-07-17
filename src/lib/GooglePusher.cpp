@@ -118,7 +118,8 @@ boost::asio::awaitable<Pusher::Result> GooglePusher::gpush(const GooglePushMessa
         }
 
         const auto body = boost::json::serialize(root);
-        LOG_TRACE_N << "Sending push message to token: " << token.substr(0, 16) << "...";
+        LOG_TRACE_N << "Sending push message to token: " << token.substr(0, 16) << "..."
+                    << " with body: " << body;
 
         try {
             const auto res = co_await rest_.Build()->Post(url)
@@ -133,6 +134,8 @@ boost::asio::awaitable<Pusher::Result> GooglePusher::gpush(const GooglePushMessa
                            << res.msg;
                 co_return Pusher::Result{false, res.msg, num_successful};
             }
+
+            ++num_successful;
 
         } catch (const boost::system::system_error& e) {
             LOG_WARN_N << "Failed to send push message: " << e.what();

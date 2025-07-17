@@ -33,7 +33,6 @@ if(POLICY CMP0167)
 endif()
 
 find_package(Boost 1.80 REQUIRED COMPONENTS
-  filesystem
   system
   json
   url

@@ -107,10 +107,16 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    pm.notification->title = title;
-    pm.notification->body = body;
-    pm.notification->sound = sound;
-    pm.notification->icon = icon;
+    if (!title.empty()|| !body.empty() || !sound.empty() || !icon.empty()) {
+        pm.notification.emplace();
+        pm.notification->title = title;
+        pm.notification->body = body;
+        pm.notification->sound = sound;
+        pm.notification->icon = icon;
+    } else if (pm.type == PushMessage::PushType::NOTIFICATION) {
+        cerr << "Notification type selected but no title, body, sound, or icon provided." << endl;
+        return 1;
+    }
 
     vector<string_view> tow;
 
