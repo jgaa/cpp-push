@@ -1,8 +1,8 @@
 
-#include <atomic>
-#include <chrono>
+//#include <atomic>
+// #include <chrono>
 
-#include <restincurl/restincurl.h>
+// #include <restincurl/restincurl.h>
 
 #include "cpp-push/Pusher.h"
 
@@ -11,19 +11,6 @@ namespace jgaa::cpp_push {
 
 class GooglePusher : public Pusher {
 public:
-    enum class State {
-        STARTING,
-        AVAILABLE,
-        ERROR,
-        STOPPING,
-        STOPPED
-    };
-
-    struct OAuthToken {
-        std::string access_token;
-        std::chrono::system_clock::time_point expiry;
-    };
-
     struct ServiceAccount {
         std::string type;
         std::string project_id;
@@ -59,42 +46,29 @@ public:
      */
     explicit GooglePusher(const Config& config, boost::asio::io_context& ctx);
 
-
-    virtual bool isReady() const noexcept override {
-        return state_.load(std::memory_order_relaxed) == State::AVAILABLE;
-    }
-
     [[nodiscard]] virtual boost::asio::awaitable<Result> push(const PushMessage& pm) override;
     [[nodiscard]] virtual boost::asio::awaitable<Result> gpush(const GooglePushMessage& pm);
 
     void run();
     void stop() override;
 
+private:
     std::shared_ptr<OAuthToken> getAuth() const noexcept {
         return auth_token_.load(std::memory_order_relaxed);
     }
 
-private:
-    void setState(State state);
     void setAuthToken(std::shared_ptr<OAuthToken> && token) {
         auth_token_.store(std::move(token), std::memory_order_relaxed);
     }
 
-    [[nodiscard]] State getState() const noexcept {
-        return state_.load(std::memory_order_relaxed);
-    }
-    boost::asio::awaitable<void> run_();
-    [[nodiscard]] std::string createJwtToken() const;
-    [[nodiscard]] boost::asio::awaitable<OAuthToken> getAccessToken();
     void loadServiceAccount();
+    [[nodiscard]] std::string createJwtToken() const;
+    [[nodiscard]] boost::asio::awaitable<void> run_();
+    [[nodiscard]] boost::asio::awaitable<GooglePusher::OAuthToken> getAccessToken();
 
-    Config config_;
-    restincurl::Client rest_;
+    ServiceAccount service_account_;
     boost::asio::io_context& ctx_;
     boost::asio::deadline_timer jwt_timer_{ctx_};
-    ServiceAccount service_account_;
-    std::atomic<State> state_{State::STARTING}; // Indicates if the pusher is available
-    std::mutex mutex_;
     std::atomic<std::shared_ptr<OAuthToken>> auth_token_;
 };
 

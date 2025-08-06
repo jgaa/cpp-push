@@ -15,17 +15,7 @@ using namespace std;
 
 using service_account_t = jgaa::cpp_push::GooglePusher::ServiceAccount;
 
-ostream& operator << (ostream& out, const jgaa::cpp_push::GooglePusher::State& state) {
-    constexpr auto states = to_array<string_view>({
-                                                   string_view{"STARTING"},
-                                                   string_view{"AVAILABLE"},
-                                                   string_view{"ERROR"},
-                                                   string_view{"STOPPING"},
-                                                   string_view{"STOPPED"}
-    });
 
-    return out << states.at(static_cast<size_t>(state));
-}
 
 namespace boost::json {
 service_account_t tag_invoke(json::value_to_tag<service_account_t>, json::value const& jv)
@@ -45,14 +35,28 @@ service_account_t tag_invoke(json::value_to_tag<service_account_t>, json::value 
         value_to<std::string>(obj.at("token_uri"))
     };
 }
-} // ns boost.json
+}
+// ns boost.json
 
 namespace jgaa::cpp_push {
 
 GooglePusher::GooglePusher(const Config &config,  boost::asio::io_context& ctx)
-    : config_(config), ctx_{ctx} {
+    : Pusher(config), ctx_{ctx} {
 
     loadServiceAccount();
+}
+
+void GooglePusher::stop()
+{
+    LOG_INFO_N << "Stopping GooglePusher...";
+    setState(State::STOPPING);
+    jwt_timer_.cancel();
+}
+
+void GooglePusher::run()
+{
+    boost::asio::co_spawn(ctx_, std::bind(&GooglePusher::run_, this),
+                          boost::asio::detached);
 }
 
 boost::asio::awaitable<Pusher::Result> GooglePusher::gpush(const GooglePushMessage &pm)
@@ -104,7 +108,7 @@ boost::asio::awaitable<Pusher::Result> GooglePusher::gpush(const GooglePushMessa
     }
 
     message["android"] = android;
-    const auto baerer = format("Bearer {}", getAuth()->access_token);
+    const auto bearer = format("Bearer {}", getAuth()->access_token);
 
     auto num_successful = 0u;
 
@@ -122,8 +126,8 @@ boost::asio::awaitable<Pusher::Result> GooglePusher::gpush(const GooglePushMessa
                     << " with body: " << body;
 
         try {
-            const auto res = co_await rest_.Build()->Post(url)
-                .Header("Authorization", baerer)
+            const auto res = co_await rest().Build()->Post(url)
+                .Header("Authorization", bearer)
                 .WithJson()
                 .AcceptJson()
                 .SendData(body)
@@ -165,71 +169,13 @@ boost::asio::awaitable<Pusher::Result> GooglePusher::push(const PushMessage &pm)
     co_return co_await gpush(gpm);
 }
 
-void GooglePusher::run()
-{
-    boost::asio::co_spawn(ctx_, std::bind(&GooglePusher::run_, this),
-                          boost::asio::detached);
-}
 
-void GooglePusher::stop()
-{
-    LOG_INFO_N << "Stopping GooglePusher...";
-    setState(State::STOPPING);
-    jwt_timer_.cancel();
-}
-
-void GooglePusher::setState(State state)
-{
-    if (state != state_) {
-        LOG_DEBUG_N << "state changed from "
-                    << state_ << " to " << state;
-        state_ = state;
-    }
-}
-
-boost::asio::awaitable<void> GooglePusher::run_()
-{
-    LOG_INFO_N << "Starting...";
-
-    while(state_ <= State::ERROR) {
-        try {
-            auto token = co_await getAccessToken();
-            const int refresh_after = chrono::duration_cast<chrono::minutes>(
-                                          token.expiry - std::chrono::system_clock::now()
-                                          - std::chrono::minutes(config_.google.jwt_refresh_minutes))
-                                          .count();
-            LOG_TRACE_N << "Token expires in "
-                        << chrono::duration_cast<chrono::minutes>(token.expiry - std::chrono::system_clock::now()).count()
-                        << " minutes, refreshing after " << refresh_after << " minutes";
-            jwt_timer_.expires_from_now(boost::posix_time::minutes(max(1, refresh_after)));
-            setAuthToken(std::make_shared<OAuthToken>(std::move(token)));
-            setState(State::AVAILABLE);
-        } catch (const std::exception& e) {
-            LOG_WARN_N << "Error creating JWT token: " << e.what();
-            setState(State::ERROR);
-            jwt_timer_.expires_from_now(boost::posix_time::seconds(30));
-        }
-
-        try {
-            co_await jwt_timer_.async_wait(boost::asio::use_awaitable);
-        } catch (const boost::system::system_error& e) {
-            if (e.code() != boost::asio::error::operation_aborted) {
-                LOG_WARN_N << "JWT timer error: " << e.what();
-                setState(State::ERROR);
-            }
-        }
-    }
-
-    rest_.Close();
-    setState(State::STOPPED);
-    LOG_INFO_N << "Done.";
-}
 
 std::string GooglePusher::createJwtToken() const
 {
     using namespace std::chrono;
     auto now = system_clock::now();
-    auto exp = now + minutes(config_.google.jwt_ttl_minutes);
+    auto exp = now + minutes(config().google.jwt_ttl_minutes);
 
     // PEM‐encoded private key and the key ID from your JSON
     const auto& priv_pem = service_account_.private_key;
@@ -265,7 +211,7 @@ boost::asio::awaitable<GooglePusher::OAuthToken> GooglePusher::getAccessToken()
     // LOG_TRACE_N << "Requesting access token at " << service_account_.token_uri
     //                << " with body: " << body;
 
-    const auto auth_res = co_await rest_.Build()->Post(service_account_.token_uri)
+    const auto auth_res = co_await rest().Build()->Post(service_account_.token_uri)
         .Header("Content-Type", "application/x-www-form-urlencoded")
         .SendData(body)
         .AsioAsyncExecute(boost::asio::use_awaitable);
@@ -305,14 +251,14 @@ boost::asio::awaitable<GooglePusher::OAuthToken> GooglePusher::getAccessToken()
 
 void GooglePusher::loadServiceAccount()
 {
-    std::ifstream in{config_.google.config_file, std::ios::binary};
+    std::ifstream in{config().google.config_file, std::ios::binary};
     if (!in) {
         string_view reason = std::strerror(errno);
-        LOG_ERROR_N <<"Failed to open " << config_.google.config_file << ": " << reason;
+        LOG_ERROR_N <<"Failed to open " << config().google.config_file << ": " << reason;
         throw std::runtime_error{"Failed to open service account file"};
     }
 
-    LOG_DEBUG_N << "Loading service account from " << config_.google.config_file;
+    LOG_DEBUG_N << "Loading service account from " << config().google.config_file;
     std::string s((std::istreambuf_iterator<char>(in)),
                   std::istreambuf_iterator<char>());
 
@@ -332,6 +278,44 @@ std::shared_ptr<Pusher> createPusherForGoogle(const Config& config, boost::asio:
     auto p = std::make_shared<GooglePusher>(config, ctx);
     p->run();
     return p;
+}
+
+boost::asio::awaitable<void> GooglePusher::run_()
+{
+    LOG_INFO_N << "Starting...";
+
+    while(state() <= State::ERROR) {
+        try {
+            auto token = co_await getAccessToken();
+            const int refresh_after = chrono::duration_cast<chrono::minutes>(
+                                          token.expiry - std::chrono::system_clock::now()
+                                          - std::chrono::minutes(config().google.jwt_refresh_minutes))
+                                          .count();
+            LOG_TRACE_N << "Token expires in "
+                        << chrono::duration_cast<chrono::minutes>(token.expiry - std::chrono::system_clock::now()).count()
+                        << " minutes, refreshing after " << refresh_after << " minutes";
+            jwt_timer_.expires_from_now(boost::posix_time::minutes(max(1, refresh_after)));
+            setAuthToken(std::make_shared<OAuthToken>(std::move(token)));
+            setState(State::AVAILABLE);
+        } catch (const std::exception& e) {
+            LOG_WARN_N << "Error creating JWT token: " << e.what();
+            setState(State::ERROR);
+            jwt_timer_.expires_from_now(boost::posix_time::seconds(30));
+        }
+
+        try {
+            co_await jwt_timer_.async_wait(boost::asio::use_awaitable);
+        } catch (const boost::system::system_error& e) {
+            if (e.code() != boost::asio::error::operation_aborted) {
+                LOG_WARN_N << "JWT timer error: " << e.what();
+                setState(State::ERROR);
+            }
+        }
+    }
+
+    rest().Close();
+    setState(State::STOPPED);
+    LOG_INFO_N << "Done.";
 }
 
 } // ns

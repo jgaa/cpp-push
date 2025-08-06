@@ -5,10 +5,12 @@ project (CppPush
 add_library(
     ${PROJECT_NAME}
     STATIC
+    ${CPP_PUSH_ROOT}/include/cpp-push/ApplePusher.h
     ${CPP_PUSH_ROOT}/include/cpp-push/GooglePusher.h
     ${CPP_PUSH_ROOT}/include/cpp-push/Pusher.h
     ${CPP_PUSH_ROOT}/include/cpp-push/cpp-push.h
     ${CPP_PUSH_ROOT}/include/cpp-push/logging.h
+    ApplePusher.cpp
     GooglePusher.cpp
     Pusher.cpp
 )

@@ -6,6 +6,11 @@
 #include <string_view>
 #include <ranges>
 #include <variant>
+#include <chrono>
+#include <atomic>
+
+#include <restincurl/restincurl.h>
+
 
 #include <boost/asio.hpp>
 
@@ -22,7 +27,19 @@ struct Config {
         int jwt_refresh_minutes{3}; // Refresh the JWT token n minutes before the existing token expires
     };
 
+    struct Apple {
+        std::string           oauth_url; // URL for the OAuth2 token endpoint
+        std::filesystem::path p8_key_path;  // path to your AuthKey_XXXX.p8
+        std::string           key_id;       // the “Key ID” from Apple Developer
+        std::string           team_id;      // your Apple Developer Team ID
+        std::string           topic;        // your app’s bundle identifier (the apns-topic)
+        bool                  use_sandbox = false; // dev vs production APNs
+        int                   jwt_ttl_minutes{60}; // Time to live for the JWT token in minutes
+        int                   jwt_refresh_minutes{3}; // Refresh the JWT token n minutes before the existing token expires
+    };
+
     Google google;
+    Apple apple;
 };
 
 /*! Structure representing a notification message.
@@ -112,6 +129,20 @@ struct PushMessage {
  */
 class Pusher {
 public:
+    enum class State {
+        STARTING,
+        AVAILABLE,
+        ERROR,
+        STOPPING,
+        STOPPED
+    };
+
+    struct OAuthToken {
+        std::string access_token;
+        std::chrono::system_clock::time_point expiry;
+    };
+
+
     struct Result {
         /*! Default constructor initializing success to false. */
         Result() = default;
@@ -151,6 +182,12 @@ public:
         std::string message_;
     };
 
+    Pusher(const Config& config);
+    Pusher(const Pusher&) = delete;
+    Pusher& operator=(const Pusher&) = delete;
+    Pusher(Pusher&&) = delete;
+    Pusher& operator=(Pusher&&) = delete;
+
     /*! Virtual destructor to ensure proper cleanup of derived classes. */
     virtual ~Pusher() = default;
 
@@ -160,14 +197,35 @@ public:
      */
     [[nodiscard]] virtual boost::asio::awaitable<Result> push(const PushMessage& pm) = 0;
 
-    /*! Pure virtual function to check if the pusher is ready.
-     * @return True if the pusher is ready, false otherwise.
-     */
-    virtual bool isReady() const = 0;
+    virtual void stop() {};
 
-    /*! Pure virtual function to stop the pusher.
-     */
-    virtual void stop() = 0;
+    bool isReady() const noexcept {
+        return state_.load(std::memory_order_relaxed) == State::AVAILABLE;
+    }
+
+protected:
+    [[nodiscard]] State state() const noexcept {
+        return state_.load(std::memory_order_relaxed);
+    }
+
+    void setState(State state);
+
+    restincurl::Client& rest() noexcept {
+        return rest_;
+    }
+
+    const Config& config() const noexcept {
+        return config_;
+    }
+
+private:
+
+    Config config_;
+    restincurl::Client rest_;
+    // boost::asio::io_context& ctx_;
+    // boost::asio::deadline_timer jwt_timer_{ctx_};
+    std::atomic<State> state_{State::STARTING}; // Indicates if the pusher is available
+    std::mutex mutex_;
 };
 
 /*! Factory function
@@ -175,11 +233,22 @@ public:
  *  Creates a Pusher instance for Google Firebase Cloud Messaging (FCM).
  *  @param config The configuration object containing necessary parameters.
  *
- *  You will normally only need one Pusher instance for your application.
+ *  You will normally only need one Google Pusher instance for your application.
  *  The Pusher instrance can handle many simultaneous requests. It use an
  *  internal worker-thread to handle the requests asynchronously.
  */
 std::shared_ptr<Pusher> createPusherForGoogle(const Config& config, boost::asio::io_context& ctx);
+
+/*! Factory function
+ *
+ *  Creates a Pusher instance for Apple Push Notification Service (APNs).
+ *  @param cfg The configuration object containing necessary parameters.
+ *
+ *  You will normally only need one Apple Pusher instance for your application.
+ *  The Pusher instrance can handle many simultaneous requests. It use an
+ *  internal worker-thread to handle the requests asynchronously.
+ */
+std::shared_ptr<Pusher> createPusherForApple(const Config& cfg, boost::asio::io_context& ctx);
 
 } // ns
 
