@@ -24,18 +24,18 @@ struct Config {
         */
         std::filesystem::path config_file{};
         int jwt_ttl_minutes{60}; // Time to live for the JWT token in minutes
-        int jwt_refresh_minutes{3}; // Refresh the JWT token n minutes before the existing token expires
+        int jwt_refresh_minutes{5}; // Refresh the JWT token n minutes before the existing token expires
     };
 
     struct Apple {
-        std::string           oauth_url; // URL for the OAuth2 token endpoint
+        //std::string           oauth_url; // URL for the OAuth2 token endpoint
         std::filesystem::path p8_key_path;  // path to your AuthKey_XXXX.p8
         std::string           key_id;       // the “Key ID” from Apple Developer
         std::string           team_id;      // your Apple Developer Team ID
         std::string           topic;        // your app’s bundle identifier (the apns-topic)
         bool                  use_sandbox = false; // dev vs production APNs
         int                   jwt_ttl_minutes{60}; // Time to live for the JWT token in minutes
-        int                   jwt_refresh_minutes{3}; // Refresh the JWT token n minutes before the existing token expires
+        int                   jwt_refresh_minutes{5}; // Refresh the JWT token n minutes before the existing token expires
     };
 
     Google google;

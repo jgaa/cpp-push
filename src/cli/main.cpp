@@ -46,14 +46,35 @@ int main(int argc, char* argv[]) {
         ("log-to-console,C",
          boost::program_options::value(&log_level_console)->default_value(log_level_console),
          "Log-level to the console; one of 'info', 'debug', 'trace'. Empty string to disable.")
-        ("config-file,c", boost::program_options::value<std::filesystem::path>(&config.google.config_file)->required(),
-         "Path to the Google service account configuration file")
+        ;
+
+    //  Add command-line options to allow sending a message. Allow the user to set the values in pm.
+    boost::program_options::options_description google("Google");
+    google.add_options()
+        ("config-file,c", boost::program_options::value<std::filesystem::path>(&config.google.config_file),
+        "Path to the Google service account configuration file")
         ("jwt-ttl", boost::program_options::value<int>(&config.google.jwt_ttl_minutes)->default_value(45),
          "JWT token time to live in minutes")
         ("jwt-refresh", boost::program_options::value<int>(&config.google.jwt_refresh_minutes)->default_value(3),
          "Minutes before expiry to refresh the JWT token");
 
-    //  Add command-line options to allow sending a message. Allow the user to set the values in pm.
+    boost::program_options::options_description apple("Apple");
+    apple.add_options()
+        ("p8-key", boost::program_options::value<std::filesystem::path>(&config.apple.p8_key_path),
+         "Path to the AuthKey_XXXX.p8 file")
+        ("key-id", boost::program_options::value<string>(&config.apple.key_id),
+         "Key ID from Apple Developer")
+        ("team-id", boost::program_options::value<string>(&config.apple.team_id),
+         "Apple Developer Team ID")
+        ("topic", boost::program_options::value<string>(&config.apple.topic),
+         "App's bundle identifier (apns-topic)")
+        ("use-sandbox", boost::program_options::bool_switch(&config.apple.use_sandbox)->default_value(false),
+         "Use sandbox environment for APNs")
+        ("jwt-ttl", boost::program_options::value<int>(&config.apple.jwt_ttl_minutes)->default_value(45),
+         "JWT token time to live in minutes")
+        ("jwt-refresh", boost::program_options::value<int>(&config.apple.jwt_refresh_minutes)->default_value(3),
+         "Minutes before expiry to refresh the JWT token");
+
     PushMessage pm;
     boost::program_options::options_description msg("Message");
     vector<string> data;
@@ -79,7 +100,7 @@ int main(int argc, char* argv[]) {
 
     // Combine the descriptions
     boost::program_options::options_description all_options;
-    all_options.add(desc).add(msg);
+    all_options.add(desc).add(msg).add(google).add(apple);
     // Parse the command-line. Handle exceptions
     boost::program_options::variables_map vm;
     try {
@@ -99,6 +120,11 @@ int main(int argc, char* argv[]) {
         cout << all_options << endl;
         return 0;
     }
+
+    if (config.google.config_file.empty() && config.apple.p8_key_path.empty()) {
+        cerr << "You must specify either a Google config file or an Apple P8 key file and Apple config data." << endl;
+        return 1;
+    };
 
     if (message_type == "NOTIFICATION") {
         pm.type = PushMessage::PushType::NOTIFICATION;
@@ -161,12 +187,9 @@ int main(int argc, char* argv[]) {
 
     // Create an io_context for asynchronous operations
     boost::asio::io_context io_context;
+    std::shared_ptr<Pusher> pusher;
 
-    // Create a GooglePusher instance
-    auto pusher = createPusherForGoogle(config, io_context);
-    assert(pusher);
-
-    auto res = boost::asio::co_spawn(io_context, [&]() -> boost::asio::awaitable<int> {
+    auto push = [&]() -> boost::asio::awaitable<int> {
 
         // Ensure the pusher is ready before proceeding
         for(auto i = 0; i < 30 && !pusher->isReady(); ++i) {
@@ -189,21 +212,48 @@ int main(int argc, char* argv[]) {
             co_return 1; // Indicate failure
         }
         assert(false); // Should never reach here
-    }, boost::asio::use_future);
+    };
+
+    optional<future<int>> resg, resa;
+
+    if (!config.google.config_file.empty()) {
+        pusher = createPusherForGoogle(config, io_context);
+        assert(pusher);
+
+        resg = boost::asio::co_spawn(io_context, push, boost::asio::use_future);
+    } else if (!config.apple.p8_key_path.empty()) {
+        pusher = createPusherForApple(config, io_context);
+        assert(pusher);
+        resa = boost::asio::co_spawn(io_context, push, boost::asio::use_future);
+    }
 
     // Run the io_context to process events
     io_context.run();
 
-    // Handle the result of the push operation
     try {
-        auto result = res.get();
-        if (result == 0) {
-            LOG_INFO << "Push message sent successfully!" << std::endl;
-            return 0;
+        bool failed = false;
+        if (resg) {
+            auto r = resg->get();
+            if (r != 0) {
+                LOG_ERROR << "Google push failed with code: " << r;
+                failed = true;
+            }
+
         }
 
-        LOG_ERROR << "Failed to send push message." << std::endl;
-        return result;
+        if (resa) {
+            auto r = resa->get();
+            if (r != 0) {
+                LOG_ERROR << "Apple push failed with code: " << r;
+                failed = true;
+            }
+        }
+
+        if (!failed) {
+            LOG_INFO << "Push operation(s) completed successfully.";
+            return 0; // Success
+        }
+
     } catch (const std::exception& e) {
         LOG_ERROR << "The app threw up: " << e.what() << std::endl;
     }

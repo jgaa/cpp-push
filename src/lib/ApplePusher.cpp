@@ -223,6 +223,10 @@ ApplePusher::push(const PushMessage& pm)
     co_return co_await apush(apm);
 }
 
-
+std::shared_ptr<Pusher> createPusherForApple(const Config& config, boost::asio::io_context& ctx) {
+    auto p = std::make_shared<ApplePusher>(config, ctx);
+    p->run();
+    return p;
+}
 
 } // ns

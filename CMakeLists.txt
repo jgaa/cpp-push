@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(cpp-push VERSION 0.1.0 LANGUAGES CXX)
+project(cpp-push VERSION 0.2.0 LANGUAGES CXX)
 
 set(CPP_PUSH_VERSION "${PROJECT_VERSION}")
 add_definitions(-DCPP_PUSH_VERSION="${CPP_PUSH_VERSION}")
