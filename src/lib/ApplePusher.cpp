@@ -47,12 +47,12 @@ boost::asio::awaitable<void> ApplePusher::run_()
             LOG_TRACE_N << "Token expires in "
                         << chrono::duration_cast<chrono::minutes>(token->expiry - std::chrono::system_clock::now()).count()
                         << " minutes, refreshing after " << refresh_after << " minutes";
-            jwt_timer_.expires_from_now(boost::posix_time::minutes(max(1, refresh_after)));
+            jwt_timer_.expires_after(chrono::minutes(max(1, refresh_after)));
             setState(State::AVAILABLE);
         } catch (const std::exception& e) {
             LOG_WARN_N << "Error creating JWT token: " << e.what();
             setState(State::ERROR);
-            jwt_timer_.expires_from_now(boost::posix_time::seconds(30));
+            jwt_timer_.expires_after(chrono::seconds(30));
         }
 
         try {

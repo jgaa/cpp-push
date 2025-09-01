@@ -56,7 +56,7 @@ private:
     }
     boost::asio::io_context& ctx_;
     std::atomic<std::shared_ptr<OAuthToken>> auth_token_;
-    boost::asio::deadline_timer jwt_timer_{ctx_};
+    boost::asio::steady_timer jwt_timer_{ctx_};
 };
 
 } // namespace

@@ -222,8 +222,6 @@ private:
 
     Config config_;
     restincurl::Client rest_;
-    // boost::asio::io_context& ctx_;
-    // boost::asio::deadline_timer jwt_timer_{ctx_};
     std::atomic<State> state_{State::STARTING}; // Indicates if the pusher is available
     std::mutex mutex_;
 };
