@@ -135,7 +135,9 @@ boost::asio::awaitable<Pusher::Result> GooglePusher::gpush(const GooglePushMessa
 
             if (!res.isOk()) {
                 LOG_WARN_N << "Failed to send push message: "
-                           << res.msg;
+                           << res.msg
+                           << ", HTTP result " << res.http_response_code
+                           << ", body: " << res.body;
                 co_return Pusher::Result{false, res.msg, num_successful};
             }
 
