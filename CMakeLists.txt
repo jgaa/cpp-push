@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(cpp-push VERSION 0.2.1 LANGUAGES CXX)
+project(cpp-push VERSION 0.2.2 LANGUAGES CXX)
 
 set(CPP_PUSH_VERSION "${PROJECT_VERSION}")
 add_definitions(-DCPP_PUSH_VERSION="${CPP_PUSH_VERSION}")
@@ -33,7 +33,6 @@ if(POLICY CMP0167)
 endif()
 
 find_package(Boost 1.80 REQUIRED COMPONENTS
-  system
   json
   url
   )

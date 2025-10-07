@@ -28,7 +28,6 @@ target_link_libraries(
     RESTinCurl::RESTinCurl
     logfault
     jwt-cpp::jwt-cpp
-    Boost::system
     Boost::json
     Boost::url
 )
